@@ -13,7 +13,7 @@ class App extends React.Component {
 
     //set empty filename, upload percentage and whether user is logged in or not.
     this.state = {
-      file: "",
+      file: [],
       percent: 0,
       loggedin: !!auth.currentUser,
     }
@@ -44,7 +44,13 @@ class App extends React.Component {
 
   //set file variable as picked file.
   handleChange(event) {
-    this.setState({file: event.target.files[0]})
+    for (let i = 0; i < event.target.files.length; i++) {
+      const newImage = event.target.files[i];
+      newImage["id"] = Math.random();
+      this.setState((prevState) => ({
+        file: [...prevState.file, newImage]
+      }));
+    }
   }
 
   //upload the file
@@ -52,20 +58,23 @@ class App extends React.Component {
     if (!this.state.file) {
         alert("Please select an file first!");
     }
-    //upload file to a folder with user's email address as folder name.
-    const storageRef = ref(storage, `/${localStorage.getItem("email")}/${this.state.file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, this.state.file);
-    uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-            const percent = Math.round(
-                (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-            );
+    //upload each file to a folder with user's email address as folder name.
+    // eslint-disable-next-line
+    this.state.file.map((f) => {
+      const storageRef = ref(storage, `/${localStorage.getItem("email")}/${f.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, f);
+      uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+              const percent = Math.round(
+                  (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+              );
 
-            this.setState({percent: percent});
-        },
-        (err) => console.log(err),
-    );
+              this.setState({percent: percent});
+          },
+          (err) => console.log(err),
+      );
+    });
   }
   
   render() {
@@ -73,7 +82,7 @@ class App extends React.Component {
       return (
         <div >
           <p>You are logged in as <b>{localStorage.getItem("name")}</b>.<br/>Your email address is <b>{localStorage.getItem("email")}</b>.</p>
-          <input type="file" onChange={this.handleChange} accept="/image/*" />
+          <input type="file" multiple onChange={this.handleChange} />
           <button onClick={this.handleUpload}>Upload to Firebase</button>
           <p>{this.state.percent} "% done"</p>
         </div>
