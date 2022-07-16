@@ -1,70 +1,52 @@
-# Getting Started with Create React App
+# firebase upload app.
+To start the app run `npm install && npm start`
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+1. Once on the homepage, go to `/admin` to generate a link.
+2. Once on the admin page, open the brower console log. Then click the generate link button.
+3. Console will display the link after `"here's the link"`
+4. Note the link.
+5. Go to the link next.
+    - E.g: if link is '`crq77f`', go to `http://127.0.0.1/crq77f`
+6. A login button will be visible now. Clicking on it will allow users to authenticate and upload files.
+7. After 24 hours the link won't be valid. Can be confirmed.
 
-## Available Scripts
+# Working
 
-In the project directory, you can run:
+## Problem statement:
+Create an app that will allow users to click on a link and upload images/files to a cloud backend.
+- Links should be valid only for 24 hours once generated.
+- Each user's files should go into a separate folder.
+___________________________________
+## Solution approach
+### Generation of links:
+Simple: Using a randomiser, a five character combination of letters and numbers is generated. That is our link.
 
-### `npm start`
+eg: If the comnbination generated is `mwfj3` then the link is `http://127.0.0.1/mwfj3`
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Whenver a link is generated, A creationTime entry under the pathname same as the combination is stored in the firebase realtime database.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+eg: for the combination `mwfj3`, the database has a structure simillar to:
+````
+/mwfj3/{creationTime: 1657930585086}
+````
+Here, under path `mwfj3`, the timestamp of the creation of that link (in miliseconds) is saved.
+_______________________________
+### Verification of links:
+Using `useLocation` hook, The combination can be optained from the url entered.
 
-### `npm test`
+once we have the combination, we look for the value of `creationTime` in the database at the location of the combination.
+````
+/crq77f/{creationTime: 1657930585086}  <- We are looking for this value.
+````
+- If the locaiton `crq77f` isn't present, we say that the link is not valid.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- If the location is present and the value of creationTime is NOT more than 86400000 miliseconds (24 hours) old than current time, the link is considered **valid**.
 
-### `npm run build`
+- If the location is present and the different between creationTime and current time is more that 24 hours, Link is invalid and same is displayed.
+__________________________________________________________
+### Uploading the files.
+Files are uploaded in the firebase storage.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Users are authenticated using google authentication so that unique folder names can be generated.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Files from each user are uploaded in a folder whose name corresponds to that of user's email address.
